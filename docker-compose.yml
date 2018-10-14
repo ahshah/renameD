@@ -1,0 +1,45 @@
+version: "3"
+services:
+    renameD:
+        image: "renamed:18.10.14"
+        environment:
+            - LOCAL_USER_ID=1000
+        volumes:
+            - ~/ws/renamed/src:/home/user/src
+        command: "python3 /usr/local/bin/rename.py --src /mnt/source --dst /mnt/destination"
+        user: root
+        container_name: "RenameDaemon"
+
+        stdin_open: true
+        tty: true
+
+    inotify:
+        image: "local/renamed:18.10.13"
+        environment:
+            - LOCAL_USER_ID=1000
+        volumes:
+            - ~/ws/renamed/src:/home/user/src
+            - ~/ws/renamed/test:/home/user/test
+            - ~/ws/renamed/mount:/home/user/mount
+        command: "python3 /home/user/src/inotify_test.py"
+        user: root
+        container_name: "RenameDaemonInotify"
+
+        stdin_open: true
+        tty: true
+
+
+    tests:
+        image: "local/renamed:18.10.13"
+        environment:
+            - LOCAL_USER_ID=1000
+        volumes:
+            - ~/ws/renamed/src:/home/user/src
+            - ~/ws/renamed/test:/home/user/test
+        command: "pytest -s /home/user/test/"
+        user: root
+        container_name: "RenameDaemonTest"
+
+        stdin_open: true
+        tty: true
+
