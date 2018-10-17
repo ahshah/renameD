@@ -17,7 +17,7 @@ preliminary: $(COMMON)/entry.sh $(COMMON)/bashrc
 	cp $(COMMON)/bashrc bashrc
 	
 
-image: $(PROJECT_DOCKER_FILE) preliminary
+image: $(PROJECT_DOCKER_FILE) preliminary prod
 	docker build --tag local/$(REPOSITORY) --file $(PROJECT_DOCKER_FILE) .
 
 setup: image
@@ -26,7 +26,7 @@ setup: image
 renameD.py: $(SRC)/renameD.py
 	cp  $(SRC)/renameD.py ./
 
-prod: $(PROJECT_DOCKER_FILE_PRODUCTION) renameD.py
+prod: $(PROJECT_DOCKER_FILE_PRODUCTION) preliminary renameD.py
 	docker build --tag prod/$(REPOSITORY)  --file $(PROJECT_DOCKER_FILE_PRODUCTION) .
 
 clean:
