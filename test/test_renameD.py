@@ -1,15 +1,19 @@
 import sys, os, mock
 import pytest
+from collections import namedtuple
 from pyfakefs import fake_filesystem_unittest
+import CommonUtils
 
 SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 SRC_PATH = os.path.join(SRC_PATH, '../src/')
 sys.path.append(SRC_PATH)
-from rename import checkSanityDir
-from rename import removePrefixAndInsertPeriods
-from rename import renameFile
-from rename import singleRun
-from rename import notificationLoop
+from renameD import checkSanityDir
+from renameD import removePrefixAndInsertPeriods
+from renameD import renameFile
+from renameD import singleRun
+from renameD import notificationLoop
+from renameD import pollLoop
+from renameD import main
 
 # Seen on drusus
 # PATH=[/home/user/mount] FILENAME=[IMG-20181012-WA0007.jpg] EVENT_TYPES=['IN_MOVED_TO']
@@ -150,7 +154,7 @@ class TestExample(fake_filesystem_unittest.TestCase):
         files = sorted([ f for f in os.listdir(self.dirSrc)])
         self.assertEqual(files, self.fileListImageResult)
 
-    @mock.patch('rename.inotify.adapters.Inotify')
+    @mock.patch('renameD.inotify.adapters.Inotify')
     def test_NotificationLoopWithImage(self, inotify):
         inotify.return_value.add_watch.return_value = None
         return_list = list()
@@ -169,7 +173,7 @@ class TestExample(fake_filesystem_unittest.TestCase):
         self.assertEqual(files, self.fileListImageResult)
         print('All done')
 
-    @mock.patch('rename.inotify.adapters.Inotify')
+    @mock.patch('renameD.inotify.adapters.Inotify')
     def test_NotificationLoopWithImageDryRun(self, inotify):
         inotify.return_value.add_watch.return_value = None
         return_list = list()
@@ -188,7 +192,7 @@ class TestExample(fake_filesystem_unittest.TestCase):
         self.assertEqual(files, self.fileListImage)
         print('All done')
 
-    @mock.patch('rename.inotify.adapters.Inotify')
+    @mock.patch('renameD.inotify.adapters.Inotify')
     def test_NotificationLoopWithVideo(self, inotify):
         inotify.return_value.add_watch.return_value = None
         return_list = list()
@@ -206,3 +210,95 @@ class TestExample(fake_filesystem_unittest.TestCase):
         files = sorted([ f for f in os.listdir(self.dirDst)])
         self.assertEqual(files, self.fileListVideoResult)
         print('All done')
+
+    @mock.patch('renameD.time.sleep')
+    @mock.patch('renameD.checkSanityDir')
+    def test_PollLoop(self, csd, sleep):
+        self.fs.create_dir(self.dirSrc)
+        self.fs.create_dir(self.dirDst)
+        for f in self.fileListImage:
+            self.fs.create_file(os.path.join(self.dirSrc, f))
+
+        #with patch.object(renamed, 'checkSanityDir', wraps=renamed.checkSanityDir) as mock:
+        test = CommonUtils.ErrorAfter(2)
+        csd.side_effect = lambda x, y: test() or True
+        with pytest.raises(CommonUtils.CallableExhausted):
+            pollLoop(self.dirSrc, self.dirDst, False)
+
+        files = sorted([ f for f in os.listdir(self.dirSrc)])
+        self.assertEqual(files, self.fileListImageResult)
+
+    @mock.patch('renameD.time.sleep')
+    @mock.patch('renameD.checkSanityDir')
+    def test_PollLoop_DryRun(self, csd, sleep):
+        self.fs.create_dir(self.dirSrc)
+        self.fs.create_dir(self.dirDst)
+        for f in self.fileListImage:
+            self.fs.create_file(os.path.join(self.dirSrc, f))
+
+        #with patch.object(renamed, 'checkSanityDir', wraps=renamed.checkSanityDir) as mock:
+        test = CommonUtils.ErrorAfter(2)
+        csd.side_effect = lambda x, y: test() or False
+        with pytest.raises(CommonUtils.CallableExhausted):
+            pollLoop(self.dirSrc, self.dirDst, False)
+
+        files = sorted([ f for f in os.listdir(self.dirSrc)])
+        self.assertEqual(files, self.fileListImage)
+
+    @mock.patch('renameD.checkSanityDir')
+    @mock.patch('renameD.parseArguments')
+    @mock.patch('renameD.pollLoop')
+    @mock.patch('renameD.notificationLoop')
+    def test_main_pollLoop_dryrun(self, nl, pl, pa, csd):
+        self.fs.create_dir(self.dirSrc)
+        self.fs.create_dir(self.dirDst)
+        for f in self.fileListImage:
+            self.fs.create_file(os.path.join(self.dirSrc, f))
+        ParsedArgs = namedtuple('ParsedArgs', 'directorySrc, directoryDst, dryRun, pollOnly')
+        args = ParsedArgs(directorySrc=self.dirSrc, directoryDst=self.dirDst, dryRun=True, pollOnly=True)
+        pa.return_value = args
+        csd.return_value = True
+        main()
+        files = sorted([ f for f in os.listdir(self.dirSrc)])
+        self.assertEqual(files, self.fileListImage)
+        self.assertTrue(pl.called)
+        self.assertFalse(nl.called)
+
+
+    @mock.patch('renameD.checkSanityDir')
+    @mock.patch('renameD.parseArguments')
+    @mock.patch('renameD.pollLoop')
+    @mock.patch('renameD.notificationLoop')
+    def test_main_notificationLoop_dryrun(self, nl, pl, pa, csd):
+        self.fs.create_dir(self.dirSrc)
+        self.fs.create_dir(self.dirDst)
+        for f in self.fileListImage:
+            self.fs.create_file(os.path.join(self.dirSrc, f))
+        ParsedArgs = namedtuple('ParsedArgs', 'directorySrc, directoryDst, dryRun, pollOnly')
+        args = ParsedArgs(directorySrc=self.dirSrc, directoryDst=self.dirDst, dryRun=True, pollOnly=False)
+        pa.return_value = args
+        csd.return_value = True
+        main()
+        files = sorted([ f for f in os.listdir(self.dirSrc)])
+        self.assertEqual(files, self.fileListImage)
+        self.assertFalse(pl.called)
+        self.assertTrue(nl.called)
+
+    @mock.patch('renameD.checkSanityDir')
+    @mock.patch('renameD.parseArguments')
+    @mock.patch('renameD.pollLoop')
+    @mock.patch('renameD.notificationLoop')
+    def test_main_pollLoop_fullrun(self, nl, pl, pa, csd):
+        self.fs.create_dir(self.dirSrc)
+        self.fs.create_dir(self.dirDst)
+        for f in self.fileListImage:
+            self.fs.create_file(os.path.join(self.dirSrc, f))
+        ParsedArgs = namedtuple('ParsedArgs', 'directorySrc, directoryDst, dryRun, pollOnly')
+        args = ParsedArgs(directorySrc=self.dirSrc, directoryDst=self.dirDst, dryRun=False, pollOnly=True)
+        pa.return_value = args
+        csd.return_value = True
+        main()
+        files = sorted([ f for f in os.listdir(self.dirSrc)])
+        self.assertEqual(files, self.fileListImageResult)
+        self.assertTrue(pl.called)
+        self.assertFalse(nl.called)

@@ -1,12 +1,18 @@
 version: "3"
 services:
     renameD:
-        image: "renamed:18.10.14"
+        image: "prod/renamed:18.10.17"
         environment:
             - LOCAL_USER_ID=1000
         volumes:
-            - ~/ws/renamed/src:/home/user/src
-        command: "python3 /usr/local/bin/rename.py --src /mnt/source --dst /mnt/destination"
+            - ~/ws/renameD/src:/home/user/src
+#            - internal:/mnt/source
+            - source:/mnt/src
+            - destination:/mnt/dst
+              #- ~/ws/renameD/mount/source:/mnt/source
+              #- ~/ws/renameD/mount/destination:/mnt/destination
+              #            - volume-Vault6-out:/mnt/destination
+        command: "python3 /usr/local/bin/renameD.py --src /mnt/src --dst /mnt/dst"
         user: root
         container_name: "RenameDaemon"
 
@@ -14,13 +20,13 @@ services:
         tty: true
 
     inotify:
-        image: "local/renamed:18.10.13"
+        image: "local/renamed:18.10.17"
         environment:
             - LOCAL_USER_ID=1000
         volumes:
-            - ~/ws/renamed/src:/home/user/src
-            - ~/ws/renamed/test:/home/user/test
-            - ~/ws/renamed/mount:/home/user/mount
+            - ~/ws/renameD/src:/home/user/src
+            - ~/ws/renameD/test:/home/user/test
+            - ~/ws/renameD/mount:/home/user/mount
         command: "python3 /home/user/src/inotify_test.py"
         user: root
         container_name: "RenameDaemonInotify"
@@ -30,12 +36,12 @@ services:
 
 
     tests:
-        image: "local/renamed:18.10.13"
+        image: "local/renamed:18.10.17"
         environment:
             - LOCAL_USER_ID=1000
         volumes:
-            - ~/ws/renamed/src:/home/user/src
-            - ~/ws/renamed/test:/home/user/test
+            - ~/ws/renameD/src:/home/user/src
+            - ~/ws/renameD/test:/home/user/test
         command: "pytest -s /home/user/test/"
         user: root
         container_name: "RenameDaemonTest"
@@ -43,3 +49,12 @@ services:
         stdin_open: true
         tty: true
 
+volumes:
+    source:
+        driver: cifs
+        driver_opts:
+            share: drusus.local/Vault6/Drive/Incoming
+    destination:
+        driver: cifs
+        driver_opts:
+            share: drusus.local/Vault6/Drive/Outgoing

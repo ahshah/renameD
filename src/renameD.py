@@ -16,6 +16,8 @@ def parseArguments():
     parser.add_argument('--dry', dest='dryRun', action='store_true',
             help='Dry run, do not rename, or move anything. Print each rename' +
             'and move that would occur')
+    parser.add_argument('--poll', dest='pollOnly', action='store_true',
+            help='Use polling instead of inotify')
     parsed_args = parser.parse_args()
     parsed_args.directorySrc = os.path.abspath(parsed_args.directorySrc[0])
     parsed_args.directoryDst = os.path.abspath(parsed_args.directoryDst[0])
@@ -64,6 +66,15 @@ def notificationLoop(directorySrc, directoryDst, dryRun):
         shutil.move(sourceFilePath, renamedFilePath)
 #        print("PATH=[{}] FILENAME=[{}] EVENT_TYPES={}".format(path, filename, type_names))
     print ('Exit')
+
+def pollLoop(directorySrc, directoryDst, dryRun):
+    while(True):
+        print ("Sleeping..")
+        time.sleep(5)
+        if not checkSanityDir(directorySrc, directoryDst):
+            print ("Sanity not confirmed..")
+            continue
+        singleRun(directorySrc, directoryDst, dryRun)
 
 def renameFile(directorySrc, directoryDst, path):
     fileName = os.path.basename(path)
@@ -116,7 +127,10 @@ def main():
         time.sleep(5)
 
   singleRun(args.directorySrc, args.directoryDst, args.dryRun)
-  notificationLoop(args.directorySrc, args.directoryDst, args.dryRun)
+  if args.pollOnly:
+      pollLoop(args.directorySrc, args.directoryDst, args.dryRun)
+  else:
+      notificationLoop(args.directorySrc, args.directoryDst, args.dryRun)
 
 if __name__ == '__main__':
   main()
