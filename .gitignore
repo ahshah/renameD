@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+docker/bashrc
+docker/renameD.py
+docker/entry.sh
