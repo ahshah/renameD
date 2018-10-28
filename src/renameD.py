@@ -5,6 +5,9 @@ import inotify.constants
 import os
 import re
 import shutil
+import datetime
+from pytz import timezone
+import pytz
 
 def parseArguments():
     parser = argparse.ArgumentParser(description='Main Argument Parser')
@@ -26,22 +29,22 @@ def parseArguments():
 def checkSanityDir(dirSrc, dirDst):
     # Check src existence
     if os.path.isdir(dirSrc) is not True:
-        print ('Source directory: ' + dirSrc + ' does not exist')
+        print ('Source directory does not exist: ' + dirSrc)
         return False;
 
     # Check dst existence
     if os.path.isdir(dirDst) is not True:
-        print ('Destination directory: ' + dirDst + ' does not exist')
+        print ('Destination directory does not exist: ' + dirDst)
         return False;
 
     # Check src permission existence
     if not os.access(dirSrc, os.W_OK):
-        print ('Source directory: ' + dirSrc + ' does not exist')
+        print ('Source directory has no write permission: ' + dirSrc)
         return False;
 
     # Check dest permission existence
     if not os.access(dirDst, os.W_OK):
-        print ('Destination directory: ' + dirDst + ' does not exist')
+        print ('Destination directory has no write permission: ' + dirDst)
         return False;
 
     # All set
@@ -69,8 +72,8 @@ def notificationLoop(directorySrc, directoryDst, dryRun):
 
 def pollLoop(directorySrc, directoryDst, dryRun):
     while(True):
-        print ("Sleeping..")
         time.sleep(5)
+        print ("Checking for new files @ " + getTimeStr())
         if not checkSanityDir(directorySrc, directoryDst):
             print ("Sanity not confirmed..")
             continue
@@ -82,7 +85,8 @@ def renameFile(directorySrc, directoryDst, path):
     renamedFile = ""
 
     if not fileName.startswith("IMG_20") and not fileName.startswith("VID_20"):
-        print ('Skipping unintelligible file name: ' + path)
+        # FIXME add it back when we have real loging
+        #print ('Skipping unintelligible file name: ' + path)
         return None
 
     if len(fileName) < 18:
@@ -99,7 +103,8 @@ def renameFile(directorySrc, directoryDst, path):
         # Rename video files but move them in the destination directory
         renamedFilePath = os.path.join(directoryDst, renamedFile)
     else:
-        print ('Skipping unintelligible file extension: ' + path)
+        # FIXME add it back when we have real loging
+        # print ('Skipping unintelligible file extension: ' + path)
         return None
 
     return renamedFilePath
@@ -119,8 +124,18 @@ def singleRun(directorySrc, directoryDst, dryRun):
             shutil.move(fileName, newName)
         print ('Moved: '  + fileName + ' to: ' + newName)
 
+def getTimeStr():
+    try:
+        tz = timezone('America/New_York')
+    except pytz.exceptions.UnknownTimeZoneError:
+        tz = timezone('UTC')
+
+    return datetime.datetime.now() \
+        .astimezone(tz) \
+        .strftime("%a, %b %d, %Y %I:%M:%S %p")
+
 def main():
-  print('Hello, world!')
+  print('RenameDaemon started @ ' + getTimeStr() + '!')
   args = parseArguments()
   while (checkSanityDir(args.directorySrc, args.directoryDst) == False):
         print ('Failed sanity check, looping..')

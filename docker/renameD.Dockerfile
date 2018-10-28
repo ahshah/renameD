@@ -1,9 +1,8 @@
-FROM prod/renamed:18.10.17
+FROM prod/renamed:18.10.28
 
 RUN rm /usr/local/bin/renameD.py
 RUN apt-get install -y python3-pip
 RUN pip3 install -U pytest mock pytest-mock pyfakefs
-RUN pip3 install -U inotify
 RUN add-apt-repository ppa:neovim-ppa/stable
 RUN apt-get update
 run apt-get install -y git neovim

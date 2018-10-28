@@ -3,6 +3,7 @@ import pytest
 from collections import namedtuple
 from pyfakefs import fake_filesystem_unittest
 import CommonUtils
+import pytz
 
 SRC_PATH = os.path.dirname(os.path.abspath(__file__))
 SRC_PATH = os.path.join(SRC_PATH, '../src/')
@@ -302,3 +303,7 @@ class TestExample(fake_filesystem_unittest.TestCase):
         self.assertEqual(files, self.fileListImageResult)
         self.assertTrue(pl.called)
         self.assertFalse(nl.called)
+
+    def test_pytz_sanity(self):
+        print (pytz.all_timezones)
+

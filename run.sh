@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose up renameD
+docker-compose up -d renameD

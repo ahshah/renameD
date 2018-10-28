@@ -8,11 +8,11 @@ RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/dow
     && rm /usr/local/bin/gosu.asc \
     && chmod +x /usr/local/bin/gosu
 
-COPY entry.sh /usr/local/bin/entry.sh
-RUN chmod 755 /usr/local/bin/entry.sh
+COPY build/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh
 
-COPY bashrc /home/user/.bashrc
-COPY bashrc /root/.bashrc
+COPY build/bashrc /home/user/.bashrc
+COPY build/bashrc /root/.bashrc
 RUN echo "source .bashrc" > /home/user/.bash_profile
 RUN echo "source .bashrc" > /root/.bash_profile
 
@@ -20,5 +20,6 @@ RUN apt-get install -y python3 python3-pip
 
 RUN apt-get remove -y python2.7
 RUN apt-get autoremove -y
+RUN pip3 install -U inotify pytz
 
-COPY renameD.py /usr/local/bin/
+COPY build/renameD.py /usr/local/bin/

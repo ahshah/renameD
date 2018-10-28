@@ -1,18 +1,15 @@
 version: "3"
 services:
     renameD:
-        image: "prod/renamed:18.10.17"
+        image: "prod/renamed:18.10.28"
         environment:
             - LOCAL_USER_ID=1000
         volumes:
             - ~/ws/renameD/src:/home/user/src
-#            - internal:/mnt/source
             - source:/mnt/src
             - destination:/mnt/dst
-              #- ~/ws/renameD/mount/source:/mnt/source
-              #- ~/ws/renameD/mount/destination:/mnt/destination
-              #            - volume-Vault6-out:/mnt/destination
-        command: "python3 /usr/local/bin/renameD.py --src /mnt/src --dst /mnt/dst"
+        command: "python3 /usr/local/bin/renameD.py --src /mnt/src --dst /mnt/dst --poll"
+        # command: "sleep 3600"
         user: root
         container_name: "RenameDaemon"
 
@@ -36,7 +33,7 @@ services:
 
 
     tests:
-        image: "local/renamed:18.10.17"
+        image: "local/renamed:18.10.28"
         environment:
             - LOCAL_USER_ID=1000
         volumes:
